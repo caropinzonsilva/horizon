@@ -93,6 +93,34 @@ MongoClient.connect(url, function (err, db) {
 	var C45 = require('c4.5');
 	var ml = require('machine_learning');
 	var _ = require('lodash');
+	var obj = JSON.parse(fs.readFileSync('/Users/carolinapinzon/Desktop/export/estrato.geojson', 'utf8'));
+	/*var fs = require('fs');
+	var stream = fs.createWriteStream("add_regiones_estratos_6.sh");
+		stream.once('open', function(fd) {
+			var array = [];
+			_.each(obj.features,function(feature){
+				feature.geometry.coordinates[0] = _.map(feature.geometry.coordinates[0],function(point){
+					return [point[1],point[0]];
+				})
+				var jsonString = {
+					"type" : 0,
+					"timeB" : 0,
+					"timeE" : 0,
+					"value" : feature.properties.ESTRATO,
+					"point" : feature.geometry
+				}
+				if(feature.properties.ESTRATO == 6) {
+					array.push(jsonString);
+				}
+				if(array.length > 50){
+					stream.write('mongo tesisdb --eval \'db.estrato6.insert(' + JSON.stringify(array) + ');\'\n');
+					array = [];
+				}
+			})
+		console.log('end');
+		stream.end();
+	});*/
+	
 
 	/*var geo = require('geotabuladb');
 	geo.setCredentials({
@@ -143,7 +171,7 @@ MongoClient.connect(url, function (err, db) {
 	    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
 
 	    // Request headers you wish to allow
-	    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+	    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,Token');
 
 	    // Set to true if you need the website to include cookies in the requests sent
 	    // to the API (e.g. in case you use sessions)
@@ -223,6 +251,9 @@ MongoClient.connect(url, function (err, db) {
 	// create application/json parser
 	app.use(bodyParser.json())
 
+	app.use(bodyParser.json({limit: '50mb'}));
+	app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
+
 	var dataTypes = ['Crimes', 'Police_Stations'];
 
 	//Mongodb settup-----------------------------------------------------------------------------------
@@ -255,7 +286,9 @@ MongoClient.connect(url, function (err, db) {
 
 	var userSchema = mongoose.Schema({
 	    email: String,
-	    password: String
+	    password: String,
+	    variables: [],
+	    models: []
 	});
 
 	userSchema.methods.isUser = function (email, password, token) {
@@ -268,7 +301,8 @@ MongoClient.connect(url, function (err, db) {
 	    name: String,
 	    description: String,
 	    graphs: [String],
-	    user_id: mongoose.Schema.Types.ObjectId
+	    user_id: mongoose.Schema.Types.ObjectId,
+	    variables: []
 	});
 
 	var Project = mongoose.model('Project', projectSchema);
@@ -320,6 +354,10 @@ MongoClient.connect(url, function (err, db) {
 				}
 				return res.send(sensors);
 			});
+	});
+
+	app.get('/regions/:type', function(req, res){
+		return res.send(obj);
 	});
 
 	app.post('/explore', function(req, res) {
@@ -379,7 +417,8 @@ MongoClient.connect(url, function (err, db) {
 				if (user.password === req.body.password) {
 					res.send(JSON.stringify({
 						"status": "ok",
-						"token": user._id
+						"token": user._id,
+						"variables": user.variables
 					}));
 				}
 			}
@@ -415,9 +454,179 @@ MongoClient.connect(url, function (err, db) {
 	    		});
 				res.send(JSON.stringify({
 					"status": "ok",
-					"token": user._id
+					"token": user._id,
+					"variables": []
 				}));
 			}
+		});
+	});
+
+	app.post('/add_variable', function(req, res) {
+		console.log('/add_variable');
+		if (!req.body) return res.sendStatus(400)
+		res.setHeader('Content-Type', 'application/*+json');
+		var headers = req.headers;
+		var ObjectId = mongoose.Types.ObjectId;
+		var _id = new ObjectId(headers.token);
+
+		var variables = [];
+		User.findById(_id, function (err, user) {
+			if (err) return handleError(err);
+			console.log(user);
+			if(user.variables == undefined) {
+				user.variables = [];
+			}
+			variables = user.variables;
+			var index = -1;
+			_.each(variables,function(variable, indexX) {
+				if(variable.name == req.body.variable.name) {
+					index = indexX;
+				}
+			})
+			console.log(index);
+			if(index == -1) {
+				variables.push(req.body.variable);
+			}
+			else {
+				variables[index] = req.body.variable;
+			}
+			user.variables = variables;
+
+			console.log(variables);
+			User.update({_id: _id},{$set: {variables:variables}},function(err) {
+				if (err) return handleError(err);
+				res.send(JSON.stringify({
+					"status": "ok"
+				}));
+			})
+			/*user.save(function (err) {
+				if (err) return handleError(err);
+				res.send(JSON.stringify({
+					"status": "ok"
+				}));
+			});*/
+		});
+	});
+
+	app.post('/add_model', function(req, res) {
+		console.log('/add_model');
+		if (!req.body) return res.sendStatus(400)
+		res.setHeader('Content-Type', 'application/*+json');
+		var headers = req.headers;
+		var ObjectId = mongoose.Types.ObjectId;
+		var _id = new ObjectId(headers.token);
+
+		var models = [];
+		User.findById(_id, function (err, user) {
+			if (err) return handleError(err);
+			console.log(user);
+			if(user.models == undefined) {
+				user.models = [];
+			}
+			models = user.models;
+			models.push(req.body.model);
+
+			User.update({_id: _id},{$set: {models:models}},function(err) {
+				if (err) return handleError(err);
+				res.send(JSON.stringify({
+					"status": "ok"
+				}));
+			})
+			/*user.save(function (err) {
+				if (err) return handleError(err);
+				res.send(JSON.stringify({
+					"status": "ok"
+				}));
+			});*/
+		});
+	});
+
+	app.post('/delete_variable/:variable_index', function(req, res) {
+		console.log('/delete_variable');
+		if (!req.body) return res.sendStatus(400)
+		res.setHeader('Content-Type', 'application/*+json');
+		var headers = req.headers;
+		var ObjectId = mongoose.Types.ObjectId;
+		var _id = new ObjectId(headers.token);
+
+		var variables = [];
+		User.findById(_id, function (err, user) {
+			if (err) return handleError(err);
+			console.log(user);
+			if(user.variables == undefined) {
+				user.variables = [];
+			}
+			variables = user.variables;
+			var index = parseInt(req.params.variable_index);
+			variables.splice(index,1);
+
+			console.log(variables);
+			User.update({_id: _id},{$set: {variables:variables}},function(err) {
+				if (err) return handleError(err);
+				res.send(JSON.stringify({
+					"status": "ok"
+				}));
+			})
+			/*user.save(function (err) {
+				if (err) return handleError(err);
+				res.send(JSON.stringify({
+					"status": "ok"
+				}));
+			});*/
+		});
+	});
+
+	app.post('/delete_model/:model_index', function(req, res) {
+		console.log('/delete_model');
+		if (!req.body) return res.sendStatus(400)
+		res.setHeader('Content-Type', 'application/*+json');
+		var headers = req.headers;
+		var ObjectId = mongoose.Types.ObjectId;
+		var _id = new ObjectId(headers.token);
+
+		var models = [];
+		User.findById(_id, function (err, user) {
+			if (err) return handleError(err);
+			console.log(user);
+			if(user.models == undefined) {
+				user.models = [];
+			}
+			models = user.models;
+			var index = parseInt(req.params.model_index);
+			models.splice(index,1);
+
+			console.log(models);
+			User.update({_id: _id},{$set: {models:models}},function(err) {
+				if (err) return handleError(err);
+				res.send(JSON.stringify({
+					"status": "ok"
+				}));
+			})
+			/*user.save(function (err) {
+				if (err) return handleError(err);
+				res.send(JSON.stringify({
+					"status": "ok"
+				}));
+			});*/
+		});
+	});
+
+	app.post('/refresh_info', function(req, res) {
+		if (!req.body) return res.sendStatus(400)
+		res.setHeader('Content-Type', 'application/*+json');
+		var headers = req.headers;
+		var ObjectId = mongoose.Types.ObjectId;
+		var _id = new ObjectId(headers.token);
+
+		User.findById(_id, function (err, user) {
+			if (err) return handleError(err);
+			console.log(user);
+			res.send(JSON.stringify({
+				"status": "ok",
+				"token": user._id,
+				"variables": user.variables,
+				"models": user.models
+			}));
 		});
 	});
 
@@ -932,6 +1141,7 @@ MongoClient.connect(url, function (err, db) {
 		var accuracy;
 		var numberDays = -1*parseInt(req.body.time);
 		var sugestionClass = req.body.sugestionClass;
+		var candidates = req.body.candidates;
 
 		var keys = [{
 			key:'estrato',
@@ -967,7 +1177,6 @@ MongoClient.connect(url, function (err, db) {
 		var petitionsParametersCurrent = {
 			points: points,
 			radius: radius,
-			numberSuggestions: numberSuggestions,
 			latLngDist: latLngDist,
 			weights: weights,
 			otherContextVariables: otherContextVariables,
@@ -980,7 +1189,8 @@ MongoClient.connect(url, function (err, db) {
 			test_data: [],
 			newVector: newVector,
 			res: res,
-			sugestionClass: sugestionClass
+			sugestionClass: sugestionClass,
+			candidates: candidates
 		}
 
 		var oneNull = false;
@@ -1007,7 +1217,8 @@ MongoClient.connect(url, function (err, db) {
 
 		_.each(petitionsParameters[index].points, function(point,indexP) {
 			var vector = _.clone(petitionsParameters[index].newVector);
-			vector.valor = point.value;
+			//console.log(point);
+			vector.valor = point.valor;
 
 			if(indexP < 0.7*petitionsParameters[index].points.length){
 				petitionsParameters[index].training_data.push(vector);
@@ -1016,10 +1227,11 @@ MongoClient.connect(url, function (err, db) {
 				petitionsParameters[index].test_data.push(vector);
 			}
 
-			var i1 = point.lat - petitionsParameters[index].latLngDist,
-				i2 = point.lat + petitionsParameters[index].latLngDist,
-				j1 = point.lng - petitionsParameters[index].latLngDist,
-				j2 = point.lng + petitionsParameters[index].latLngDist;
+			var latLngDist = point.radius/100*0.001;
+			var i1 = point.point.coordinates[0] - latLngDist,
+				i2 = point.point.coordinates[0] + latLngDist,
+				j1 = point.point.coordinates[1] - latLngDist,
+				j2 = point.point.coordinates[1] + latLngDist;
 
 			var timeOpen = parseInt(point.timeB);
 			var timeOpenMinusRange = moment(timeOpen).add(petitionsParameters[index].numberDays,'d').valueOf();
@@ -1044,13 +1256,49 @@ MongoClient.connect(url, function (err, db) {
 		})
 		var class_name = "valor";
 
+		//console.log(petitionsParameters[index].training_data);
+
 		petitionsParameters[index].dt = new DecisionTree(petitionsParameters[index].training_data, class_name, petitionsParameters[index].features);
 		petitionsParameters[index].accuracy = petitionsParameters[index].dt.evaluate(petitionsParameters[index].test_data);
-
+		var contTruePrediction = 0;
+		_.each(petitionsParameters[index].test_data,function(test_data){
+			var classPredicted = parseInt(petitionsParameters[index].dt.predict(test_data));
+			var realClass = parseInt(test_data.valor);
+			if(classPredicted == 1 || classPredicted == 5) {
+				if(classPredicted == realClass) {
+					contTruePrediction ++;
+				}
+			}
+			else {
+				if(classPredicted == 2) {
+					if(classPredicted == realClass || classPredicted == realClass + 1) {
+						contTruePrediction++;
+					}
+				}
+				else if(classPredicted == 3) {
+					if(classPredicted == realClass || classPredicted == realClass + 1 || classPredicted == realClass - 1) {
+						contTruePrediction++;
+					}
+				}
+				else {
+					if(classPredicted == realClass || classPredicted == realClass - 1) {
+						contTruePrediction++;
+					}
+				}
+			}
+		})
+		//console.log(petitionsParameters[index].accuracy);
+		petitionsParameters[index].accuracy == contTruePrediction/petitionsParameters[index].test_data.length;
+		//console.log(petitionsParameters[index].accuracy);
 		cityDiscretization(index);
 	}
 
 	function cityDiscretization(index) {
+
+		petitionsParameters[index].countSearchesDBCityDiscretization = 0;
+		petitionsParameters[index].countSearchesArrayCityDiscretization = 0;
+
+		//Calculate Vectors for the map discretization
 		var bogotaLngDist = -74.007410 - -74.201731,
 			bogotaLngI = -74.201731,
 			bogotaLngF = -74.007410,
@@ -1070,8 +1318,6 @@ MongoClient.connect(url, function (err, db) {
 
 		var max = Math.ceil((bogotaLatF-bogotaLatI)/diffLat)*Math.ceil((bogotaLngF-bogotaLngI)/diffLat);
 
-		petitionsParameters[index].countSearchesArray = 0;
-		petitionsParameters[index].countSearchesDB = 0;
 		process.stdout.write('City Discretization');
 
 		petitionsParameters[index].vectors = [];
@@ -1087,7 +1333,7 @@ MongoClient.connect(url, function (err, db) {
 			var contVectors = 0;
 			for (var i = bogotaLatI; i < bogotaLatF; i += diffLat) {
 				for (var j = bogotaLngI; j < bogotaLngF; j += diffLng) {
-					petitionsParameters[index].countSearchesDB ++;
+					petitionsParameters[index].countSearchesDBCityDiscretization ++;
 					process.stdout.write('.');
 					var i2 = i + diffLat,
 						j2 = j + diffLat;
@@ -1149,7 +1395,8 @@ MongoClient.connect(url, function (err, db) {
 							}
 						}
 					});
-					if(petitionsParameters[index].countSearchesDB == 2*max && petitionsParameters[index].countSearchesArray == 2*max*petitionsParameters[index].otherContextVariables.length) {
+					//console.log(petitionsParameters[index].countSearchesDBCityDiscretization, 2*max, petitionsParameters[index].countSearchesArrayCityDiscretization, 2*max*petitionsParameters[index].otherContextVariables.length);
+					if(petitionsParameters[index].countSearchesDBCityDiscretization == 2*max && petitionsParameters[index].countSearchesArrayCityDiscretization == 2*max*petitionsParameters[index].otherContextVariables.length) {
 						console.log('done');
 						analyzeDiscretization(index);
 					}
@@ -1166,7 +1413,7 @@ MongoClient.connect(url, function (err, db) {
 			var contVectors = 0;
 			for (var i = bogotaLatI; i < bogotaLatF; i += diffLat) {
 				for (var j = bogotaLngI; j < bogotaLngF; j += diffLng) {
-					petitionsParameters[index].countSearchesDB ++;
+					petitionsParameters[index].countSearchesDBCityDiscretization ++;
 					process.stdout.write('.');
 					var i2 = i + diffLat,
 						j2 = j + diffLat;
@@ -1254,7 +1501,8 @@ MongoClient.connect(url, function (err, db) {
 							}
 						}
 					});
-					if(petitionsParameters[index].countSearchesDB == 2*max && petitionsParameters[index].countSearchesArray == 2*max*petitionsParameters[index].otherContextVariables.length) {
+					//console.log(petitionsParameters[index].countSearchesDBCityDiscretization, 2*max, petitionsParameters[index].countSearchesArrayCityDiscretization, 2*max*petitionsParameters[index].otherContextVariables.length);
+					if(petitionsParameters[index].countSearchesDBCityDiscretization == 2*max && petitionsParameters[index].countSearchesArrayCityDiscretization == 2*max*petitionsParameters[index].otherContextVariables.length) {
 						console.log('done');
 						analyzeDiscretization(index);
 					}
@@ -1287,7 +1535,7 @@ MongoClient.connect(url, function (err, db) {
 					//var vector = petitionsParameters[index].vectors[contVectors].vector;
 				}
 				_.each(petitionsParameters[index].otherContextVariables, function(contextVariable) {
-					petitionsParameters[index].countSearchesArray ++;
+					petitionsParameters[index].countSearchesArrayCityDiscretization ++;
 					if(contextVariable.weight > 0) {
 						var points = _.filter(contextVariable.points, function(point) {
 							var isInsideSpace = i <= point.lat && i2 >= point.lat && j <= point.lng && j2 >= point.lng;
@@ -1300,7 +1548,8 @@ MongoClient.connect(url, function (err, db) {
 						})
 						//console.log(features);
 						//vector[contextVariable.name] = points.length;
-						if(petitionsParameters[index].countSearchesDB == 2*max && petitionsParameters[index].countSearchesArray == 2*max*petitionsParameters[index].otherContextVariables.length) {
+						//console.log(petitionsParameters[index].countSearchesDBCityDiscretization, 2*max, petitionsParameters[index].countSearchesArrayCityDiscretization, 2*max*petitionsParameters[index].otherContextVariables.length);
+						if(petitionsParameters[index].countSearchesDBCityDiscretization == 2*max && petitionsParameters[index].countSearchesArrayCityDiscretization == 2*max*petitionsParameters[index].otherContextVariables.length) {
 							console.log('done');
 							analyzeDiscretization(index);
 						}
@@ -1329,7 +1578,7 @@ MongoClient.connect(url, function (err, db) {
 					//var vector = petitionsParameters[index].vectors[contVectors].vector;
 				}
 				_.each(petitionsParameters[index].otherContextVariables, function(contextVariable) {
-					petitionsParameters[index].countSearchesArray ++;
+					petitionsParameters[index].countSearchesArrayCityDiscretization ++;
 					if(contextVariable.weight > 0) {
 						var points = _.filter(contextVariable.points, function(point) {
 							var isInsideSpace = i1 <= point.lat && i2 >= point.lat && j1 <= point.lng && j2 >= point.lng;
@@ -1342,7 +1591,8 @@ MongoClient.connect(url, function (err, db) {
 						})
 						//console.log(features);
 						//vector[contextVariable.name] = points.length;
-						if(petitionsParameters[index].countSearchesDB == 2*max && petitionsParameters[index].countSearchesArray == 2*max*petitionsParameters[index].otherContextVariables.length) {
+						//console.log(petitionsParameters[index].countSearchesDBCityDiscretization, 2*max, petitionsParameters[index].countSearchesArrayCityDiscretization, 2*max*petitionsParameters[index].otherContextVariables.length);
+						if(petitionsParameters[index].countSearchesDBCityDiscretization == 2*max  && petitionsParameters[index].countSearchesArrayCityDiscretization == 2*max*petitionsParameters[index].otherContextVariables.length) {
 							console.log('done');
 							analyzeDiscretization(index);
 						}
@@ -1351,11 +1601,101 @@ MongoClient.connect(url, function (err, db) {
 			}
 		}
 
+		//Calculate Vectors for each candidate
+
+		petitionsParameters[index].countSearchesDB = 0;
+		petitionsParameters[index].countSearchesArray = 0;
+
+
+		petitionsParameters[index].candidatesResult = [];
+		_.each(petitionsParameters[index].candidates, function(point,indexP) {
+			//console.log(point)
+			var vector = _.clone(petitionsParameters[index].newVector);
+			vector.valor = point.value;
+
+			if(indexP < 0.7*petitionsParameters[index].points.length){
+				petitionsParameters[index].training_data.push(vector);
+			}
+			else {
+				petitionsParameters[index].test_data.push(vector);
+			}
+
+			var i1 = point.lat - petitionsParameters[index].latLngDist,
+				i2 = point.lat + petitionsParameters[index].latLngDist,
+				j1 = point.lng - petitionsParameters[index].latLngDist,
+				j2 = point.lng + petitionsParameters[index].latLngDist;
+
+			var max = petitionsParameters[index].candidates.length;
+
+			petitionsParameters[index].candidatesResult.push({
+				vector: vector,
+				i1: i1,
+				i2: i2,
+				j1: j1,
+				j2: j2
+			})
+
+			calculateVectorDT(vector,i1,i2,j1,j2,timeOpen,timeOpenMinusRange,index,2,max);
+		});
+
 	}
 
 	function analyzeDiscretization(index) {
-		process.stdout.write('Analyze Discretization'); 
-		petitionsParameters[index].suggestions = [];
+		//console.log(petitionsParameters[index].analyzeDiscretization);
+		if(petitionsParameters[index].analyzeDiscretization == undefined) {
+			console.log('Analyze Discretization 1');
+			petitionsParameters[index].analyzeDiscretization = true;
+		}
+		else {//Search Finished
+			console.log('Analyze Discretization 2');
+			process.stdout.write('Analyze Discretization'); 
+			petitionsParameters[index].suggestions = [];
+			petitionsParameters[index].suggestions4 = [];
+			petitionsParameters[index].suggestions3 = [];
+			petitionsParameters[index].suggestions2 = [];
+			petitionsParameters[index].suggestions1 = [];
+			_.each(petitionsParameters[index].vectors, function(vector) {
+				process.stdout.write('.'); 
+				var sum = 0;
+				//console.log(vector);
+				_.each(petitionsParameters[index].features,function(feature){
+					sum += vector.vector[feature];
+				});
+				if (sum != 0) {
+					var classPredicted = petitionsParameters[index].dt.predict(vector.vector);
+					//console.log(classPredicted);
+					if(classPredicted == '5') {
+						vector.sum = sum;
+						petitionsParameters[index].suggestions.push(vector);
+					}
+					else if(classPredicted == '4') {
+						vector.sum = sum;
+						petitionsParameters[index].suggestions4.push(vector);
+					}
+					else if(classPredicted == '3') {
+						vector.sum = sum;
+						petitionsParameters[index].suggestions3.push(vector);
+					}
+					else if(classPredicted == '2') {
+						vector.sum = sum;
+						petitionsParameters[index].suggestions2.push(vector);
+					}
+					else if(classPredicted == '1') {
+						vector.sum = sum;
+						petitionsParameters[index].suggestions1.push(vector);
+					}
+				}
+			})
+			console.log('done'); 
+			_.each(petitionsParameters[index].candidatesResult, function(candidate){
+				candidate.classPredicted = petitionsParameters[index].dt.predict(candidate.vector);
+			})
+
+			orderSuggestions(index);
+		}
+		
+		
+		/*petitionsParameters[index].suggestions = [];
 		_.each(petitionsParameters[index].vectors, function(vector) {
 			process.stdout.write('.'); 
 			var sum = 0;
@@ -1363,9 +1703,11 @@ MongoClient.connect(url, function (err, db) {
 				sum += vector.vector[feature];
 			});
 			if (sum != 0) {
+				console.log('before:' + moment().valueOf());
 				var classPredicted = petitionsParameters[index].dt.predict(vector.vector);
+				console.log('after:' + moment().valueOf());
 				//console.log(classPredicted);
-				if(classPredicted == petitionsParameters[index].sugestionClass) {
+				if(classPredicted == 'BUENO') {
 					vector.sum = sum;
 					petitionsParameters[index].suggestions.push(vector);
 				}
@@ -1373,6 +1715,9 @@ MongoClient.connect(url, function (err, db) {
 		})
 		console.log('done'); 
 		orderSuggestions(index);
+		_.each(petitionsParameters[index].candidatesResult, function(candidate){
+			candidate.classPredicted = petitionsParameters[index].dt.predict(candidate.vector);
+		})*/
 	}
 
 	function orderSuggestions(index) {
@@ -1417,9 +1762,15 @@ MongoClient.connect(url, function (err, db) {
 
 		petitionsParameters[index].res.send(JSON.stringify({
 			"status": "ok",
-			"suggestions": sugerenciasFinal.slice(0,petitionsParameters[index].numberSuggestions),
+			"suggestions": suggestionsWithPriority,
+			"secundarySuggestions": suggestionsWithoutPriority,
+			"candidatesResult": petitionsParameters[index].candidatesResult,
 			"accuracy": petitionsParameters[index].accuracy,
-			"index": index
+			"index": index,
+			"suggestions4": petitionsParameters[index].suggestions4,
+			"suggestions3": petitionsParameters[index].suggestions3,
+			"suggestions2": petitionsParameters[index].suggestions2,
+			"suggestions1": petitionsParameters[index].suggestions1
 		}));
 
 	}
@@ -1443,18 +1794,14 @@ MongoClient.connect(url, function (err, db) {
 					}
 				}
 			});
+			//console.log(petitionsParameters[index].countSearchesDB,2*max,petitionsParameters[index].countSearchesArray,max*petitionsParameters[index].otherContextVariables.length)
 			if(petitionsParameters[index].countSearchesDB == 2*max && petitionsParameters[index].countSearchesArray == max*petitionsParameters[index].otherContextVariables.length) {
 				console.log('done');
 				if(functionType == 1) {
 					createTree(index);
 				}
 				else {
-					var classPredicted = petitionsParameters[index].dt.predict(vector);
-						
-					petitionsParameters[index].res.send(JSON.stringify({
-						"status": "ok",
-						"classPredicted": classPredicted
-					}));
+					analyzeDiscretization(index);
 				}
 			}
 		});
@@ -1489,18 +1836,15 @@ MongoClient.connect(url, function (err, db) {
 					}
 				}
 			});
+			//console.log(petitionsParameters[index].countSearchesDB,2*max,petitionsParameters[index].countSearchesArray,max*petitionsParameters[index].otherContextVariables.length)
 			if(petitionsParameters[index].countSearchesDB == 2*max && petitionsParameters[index].countSearchesArray == max*petitionsParameters[index].otherContextVariables.length) {
 				console.log('done');
 				if(functionType == 1) {
 					createTree(index);
 				}
 				else {
-					var classPredicted = petitionsParameters[index].dt.predict(vector);
-						
-					petitionsParameters[index].res.send(JSON.stringify({
-						"status": "ok",
-						"classPredicted": classPredicted
-					}));
+					console.log('done');
+					analyzeDiscretization(index);
 				}
 			}
 		});
@@ -1535,19 +1879,14 @@ MongoClient.connect(url, function (err, db) {
 					}
 				})
 
-				
+				//console.log(petitionsParameters[index].countSearchesDB,2*max,petitionsParameters[index].countSearchesArray,max*petitionsParameters[index].otherContextVariables.length)
 				if(petitionsParameters[index].countSearchesDB == 2*max && petitionsParameters[index].countSearchesArray == max*petitionsParameters[index].otherContextVariables.length) {
 					console.log('done');
 					if(functionType == 1) {
 						createTree(index);
 					}
 					else {
-						var classPredicted = petitionsParameters[index].dt.predict(vector);
-						
-						petitionsParameters[index].res.send(JSON.stringify({
-							"status": "ok",
-							"classPredicted": classPredicted
-						}));
+						analyzeDiscretization(index);
 					}
 				}
 			}
@@ -1560,7 +1899,6 @@ MongoClient.connect(url, function (err, db) {
 
 		var points = req.body.points;
 		var radius = req.body.radius;
-		var numberSuggestions = req.body.numberSuggestions;
 		var latLngDist = req.body.radius/100*0.001;
 		var weights = req.body.weights;
 		var accuracy;
@@ -1610,6 +1948,9 @@ MongoClient.connect(url, function (err, db) {
 			var class_name = "valor";
 			var features = ["c0","c1", "c2", "c3", "c4", "c5"];
 			var dt = new DecisionTree(training_data, class_name, features);
+			_.each(test_data,function(data){
+
+			})
 			accuracy = dt.evaluate(test_data);
 			//console.log('accuracy',accuracy);
 
@@ -1698,7 +2039,7 @@ MongoClient.connect(url, function (err, db) {
 						"c5": cont[5]
 					}
 					var prediction = dt.predict(objectCont)
-					if (prediction == 'CLASS2' && sumaCont > 0) {
+					if (prediction == '5' && sumaCont > 0) {
 						var existingPoints = _.filter(points, function(point) {
 							return point.lat >= j && point.lat <= j2 && point.lng >= i && point.lng <= i2;
 						});
