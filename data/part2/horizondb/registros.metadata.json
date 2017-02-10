@@ -1,1 +1,0 @@
-{"options":{},"indexes":[{"v":1,"key":{"_id":1},"name":"_id_","ns":"horizondb.registros"},{"v":1,"key":{"timeB":1.0},"name":"timeB_1","ns":"horizondb.registros"},{"v":1,"key":{"timeE":1.0},"name":"timeE_1","ns":"horizondb.registros"}]}
