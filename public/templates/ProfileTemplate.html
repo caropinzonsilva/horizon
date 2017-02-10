@@ -1,0 +1,75 @@
+<div class="vertical layout end popupSmall leaflet-container" ng-show="popupAddVariable.show" style="top: {{popupAddVariable.top}}px; left:{{popupAddVariable.left}}px">
+  <a class="leaflet-popup-close-button" href="" ng-click="hidePopupAddVariable()">×</a>
+  <div style="height: 10px;"></div>
+  <div class="horizontal layout center">
+      <div class="button horizontal layout center center-justified left" ng-click="goToCreateNewCSV()">Nueva Variable</div>
+      <div class="button horizontal layout center center-justified" id="importCSVButton">Importar CSV</div>
+      <input type="file" id="importCSVVariable" ng-mouseover="hoverImportButton()" ng-mouseleave="removeHoverImportButton()" onchange="angular.element(this).scope().importCSVVariable()">
+    </div>
+</div>
+<div class="horizontal layout center-justified body" id="bodyProfile">
+  <div class="maxWidth vertical layout center-justified">
+    <div class="horizontal layout">
+      <div class="profileBox flex">
+        <div style="font-weight: 400">Variables</div>
+        <div class="list">
+          <div class="horizontal layout center listObject" ng-repeat="(key,variable) in variables">
+            <div class="flex" ng-click="goToVariable(key)">{{variable.name}}</div>
+            <svg class="close" viewBox="0 0 24 24" ng-click="deleteVariable(key)">
+                <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"></path>
+            </svg>
+          </div>
+          <div class="horizontal layout center listObject">
+            <div class="flex">Adicionar Variable</div>
+            <svg class="close" viewBox="0 0 24 24" ng-click="addVariable($event)">
+                <path d="M17,13H13V17H11V13H7V11H11V7H13V11H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div style="width: 50px;"></div>
+      <div class="profileBox flex">
+        <div style="font-weight: 400">Modelos</div>
+        <div class="list">
+          <div class="horizontal layout center listObject" ng-repeat="(key,model) in models">
+            <div class="flex" ng-click="goToModel(key)">{{model.name}}</div>
+            <svg class="close" viewBox="0 0 24 24" ng-click="deleteModel(key)">
+                <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"></path>
+            </svg>
+          </div>
+          <div class="horizontal layout center listObject">
+            <div class="flex">Adicionar Modelo</div>
+            <svg class="close" viewBox="0 0 24 24" ng-click="addModel()">
+                <path d="M17,13H13V17H11V13H7V11H11V7H13V11H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <!--<div class="horizontal layout">
+        <div class="flex-4 projectList">
+        <div ng-repeat="(key, value) in projects">
+          <div class="horizontal layout center projectDiv">
+            <div class="flex">
+              <div class="name">{{ value.name }}</div>
+              <div class="description">{{ value.description }}</div>
+            </div>
+            <div class="button horizontal layout center center-justified" ng-click="viewProject(value.id)">View</div>
+            <div class="button horizontal layout center center-justified" ng-click="editProject(value.id)">Edit</div>
+          </div>
+          <hr>
+        </div>
+        </div>
+        <div class="flex-2 newProjectDiv">
+          <div class="newProjectTitle">New Project</div>
+          <div class="label">Project Name</div>
+          <input type="text" placeholder="Name" ng-model="newProject.name"/>
+          <div class="label">Project Description</div>
+          <textarea placeholder="Description" ng-model="newProject.description"></textarea>
+          <div class="button horizontal layout center center-justified" ng-click="createProject()">
+            Add Project
+          </div>
+        </div>
+      </div>-->
+    </div>
+  </div>
+</div>

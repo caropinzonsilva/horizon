@@ -1,0 +1,42 @@
+
+    <div class="body horizontal layout">
+      <div id="map" ng-click="hideDialogs()"></div>
+      <div id="map2Container">
+        <div id="map2" ng-click="hideDialogs()"></div>
+      </div>
+    </div>
+    <div id="accuracyDiv" ng-show="showDialogs.layerAccuracy">
+      <div>Exactitud</div>
+      <svg width="70" height="70">
+        <path id="arc1" fill="none" stroke="{{file.accuracyColor}}" stroke-width="10" />
+      </svg>
+      <div class="accuracyValue horizontal layout center-justified"><span>{{ file.accuracy }}</span>%</div>
+    </div>
+    
+    <div id="modelsOptionsDiv" class="horizontal layout end-justified" ng-show="showDialogs.layerAccuracy">
+      <!--<div class="algorithmButton">Classification</div>-->
+      <div class="algorithmButton" ng-click="downloadCSVModel()">Descargar</div>
+    </div>
+    <div class="horizontal layout end" id="heatmapColors" ng-show="showDialogs.heatmapColors">
+      <div class="vertical layout center">
+        1
+        <div class="square" style="background-color: rgba(95,20,95,0.8)"></div>
+      </div>
+      <div class="vertical layout center">
+        2
+        <div class="square" style="background-color: rgba(107,62,152,0.8)"></div>
+      </div>
+      <div class="vertical layout center">
+        3
+        <div class="square" style="background-color: rgba(76,168,243,0.8)"></div>
+      </div>
+      <div class="vertical layout center">
+        4
+        <div class="square" style="background-color: rgba(45,254,255,0.8)"></div>
+      </div>
+      <div class="vertical layout center">
+        5
+        <div class="square" style="background-color: rgba(255,255,255,0.8)"></div>
+      </div>
+    </div>
+

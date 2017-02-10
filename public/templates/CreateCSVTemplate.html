@@ -1,0 +1,181 @@
+<div id="map"></div>
+<div class="horizontal layout center" style="position:fixed; top: 50px; right: 10px; font-weight: 300; fill: #8E9DA8; color: #8E9DA8; cursor: pointer; z-index:8999;" ng-show="!addRegisterMode" ng-click="changeModeToAdd()">
+  Adicionar
+  <svg style="width:30px;height:30px;" viewBox="0 0 24 24">
+      <path d="M17,13H13V17H11V13H7V11H11V7H13V11H17M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+  </svg>
+</div>
+<div class="horizontal layout center" style="position:fixed; top: 80px; right: 10px; font-weight: 300; fill: #8E9DA8; color: #8E9DA8; cursor: pointer; z-index:8999;" ng-show="addRegisterMode" ng-click="changeModeToEdit()">
+  Modificar
+  <img src="img/edit_point.png" width="30" height="30">
+</div>
+<div class="horizontal layout center" style="position:fixed; top: 50px; right: 10px; font-weight: 300; fill: #60C0C0; color: #60C0C0; cursor: pointer; z-index:8999;" ng-show="addRegisterMode">
+  Adicionar
+  <svg style="width:30px;height:30px;" viewBox="0 0 24 24">
+      <path d="M17,13H13V17H11V13H7V11H11V7H13V11H17M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+  </svg>
+</div>
+<div class="horizontal layout center" style="position:fixed; top: 80px; right: 10px; font-weight: 300; fill: #60C0C0; color: #60C0C0; cursor: pointer; z-index:8999;" ng-show="!addRegisterMode">
+  Modificar
+  <img src="img/edit_point_enabled.png" width="30" height="30">
+</div>
+<div class="mapCheckboxOptions">
+  <div style="font-weight: 400">Registros adicionados</div>
+  <div style="height: 6px;"></div>
+  <div class="registersDiv">
+    <div class="horizontal layout center" ng-repeat="(key, register) in registers">
+      <div class="flex" style="cursor: pointer;" ng-click=showRegisterDetails(key)>{{register.name}}</div>
+      <svg class="close" viewBox="0 0 24 24" ng-click="deleteRegister(key)">
+          <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
+      </svg>
+    </div>
+  </div>
+</div>
+<div class="mapCheckboxOptions" style="width: 161px; top: 336px;">
+  <div style="font-weight: 400">
+    Periodo de tiempo
+  </div>
+  <select class="select" ng_model="period">
+    <option value="7_d">1 semana</option>
+    <option value="1_M">1 mes</option>
+    <option value="3_M">3 meses</option>
+    <option value="6_M">6 meses</option>
+    <option value="1_y">1 año</option>
+  </select>
+</div>
+<div class="mapCheckboxOptions" style="width: 161px; top: 404px;">
+  <div style="font-weight: 400">
+    Nombre
+  </div>
+  <input type="text" class="input" ng_model="name">
+</div>
+<div id="csvOptionsDiv" class="horizontal layout">
+    <!--<div class="algorithmButton">Classification</div>-->
+    
+    <div class="algorithmButton" ng-click="saveCSV()" ng-if="header.loggedIn">Guardar</div>
+    <div style="width: 12px;" ng-if="header.loggedIn"></div>
+    <div class="algorithmButton" ng-click="downloadCSV()">Descargar</div>
+  </div>
+<div class="dateScale horizontal layout center center-justified" style="background-color: rgba(96,192,192,0.8); color: white; font-weight: 200; font-size: 16px;">
+  Haz <span class="black bold">&nbsp;click&nbsp;</span> en cualquier lugar del mapa para adicionar un nuevo registro
+</div>
+<div class="leaflet-container">
+  <div ng-repeat="(key, register) in registers" ng-show="register.show" class="leaflet-popup leaflet-zoom-animated" style="opacity: 1; z-index: 9000; position: absolute; bottom: {{register.position.bottom}}px; left: {{register.position.left}}px; font-weight: 300;">
+    <a class="leaflet-popup-close-button" href="" ng-click="hideRegisterDetails(key)">×</a>
+    <div class="leaflet-popup-content-wrapper">
+      <div class="leaflet-popup-content" >
+        <div class="horizontal layout">
+          <div style="width: 82px;" class="bold">Nombre</div>
+          <input type="text" ng-model="register.name" style="width: 280px;"/>
+        </div>
+        <div style="height: 12px;"></div>
+        <div class="horizontal layout">
+          <div style="width: 82px;">
+            <span class="bold">Radio</span> (<span>{{ register.radius/1000 }}</span>km)
+          </div>
+          <input type="range" min="100" max="1400" step="100" style="width: 280px;" ng-model="register.radius" ng-change="changeRaduis(key)">
+        </div>
+        <div style="height: 12px;"></div>
+        <div class="horizontal layout end">
+          <div class="flex bold">Resultados</div>
+          <div class="resultadosLabel" style="position: relative;left: -45px;">MALO</div>
+          <div class="resultadosLabel" style="position: relative; left: -20px;">BUENO</div>
+        </div>
+        <div class="horizontal layout center" ng-repeat="(keyRange,range) in register.ranges">
+          <div style="width: 8px;"></div>
+          <div style="">Inicio</div>
+          <div style="width: 2px;"></div>
+          <svg class="delete" viewBox="0 0 24 24" ng-click="setBeginning($event,this)">
+            <path d="M7,10H12V15H7M19,19H5V8H19M19,3H18V1H16V3H8V1H6V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3Z" />
+          </svg>
+          <input type="text" class="date" ng-model="range.momentBeginLabel" ng-change="updateBegin(this)">
+          <div style="width: 12px;"></div>
+          <div style="">Fin</div>
+          <div style="width: 2px;"></div>
+          <svg class="delete" viewBox="0 0 24 24" ng-click="setEnding($event,this)">
+               <path d="M19,19H5V8H19M16,1V3H8V1H6V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3H18V1M17,12H12V17H17V12Z" />
+          </svg>
+          <input type="text" class="date" ng-model="range.momentEndLabel" ng-change="updateEnd(this,$event)">
+          <div style="width: 12px;"></div>
+          <div style="">Resultado</div>
+          <div style="width: 2px;"></div>
+          <svg viewBox="0 0 24 24" class="score" id="score_empty_0_{{keyRange}}_{{key}}" ng-click="fillScore(0,keyRange,this,$event)" >
+              <path d="M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+          </svg>
+          <svg viewBox="0 0 24 24" class="score hide" id="score_fill_0_{{keyRange}}_{{key}}" ng-click="emptyScore(0,keyRange,this,key)">
+              <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+          </svg>
+          <svg viewBox="0 0 24 24" class="score" id="score_empty_1_{{keyRange}}_{{key}}" ng-click="fillScore(1,keyRange,this,key)">
+              <path d="M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+          </svg>
+          <svg viewBox="0 0 24 24" class="score hide" id="score_fill_1_{{keyRange}}_{{key}}" ng-click="emptyScore(1,keyRange,this,key)">
+              <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+          </svg>
+          <svg viewBox="0 0 24 24" class="score" id="score_empty_2_{{keyRange}}_{{key}}" ng-click="fillScore(2,keyRange,this,key)">
+              <path d="M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+          </svg>
+          <svg viewBox="0 0 24 24" class="score hide" id="score_fill_2_{{keyRange}}_{{key}}" ng-click="emptyScore(2,keyRange,this,key)">
+              <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+          </svg>
+          <svg viewBox="0 0 24 24" class="score" id="score_empty_3_{{keyRange}}_{{key}}" ng-click="fillScore(3,keyRange,this,key)">
+              <path d="M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+          </svg>
+          <svg viewBox="0 0 24 24" class="score hide" id="score_fill_3_{{keyRange}}_{{key}}" ng-click="emptyScore(3,keyRange,this,key)">
+              <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+          </svg>
+          <svg viewBox="0 0 24 24" class="score" id="score_empty_4_{{keyRange}}_{{key}}" ng-click="fillScore(4,keyRange,this,key)">
+              <path d="M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+          </svg>
+          <svg viewBox="0 0 24 24" class="score hide" id="score_fill_4_{{keyRange}}_{{key}}" ng-click="emptyScore(4,keyRange,this,key)">
+              <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+          </svg>
+          <div style="width: 12px;"></div>
+          <svg class="delete" viewBox="0 0 24 24" ng-click="deleteRange(key, keyRange)">
+              <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
+          </svg>
+        </div>
+        <div class="horizontal layout center adicionarResultado" ng-click="addRange(this)">
+          <svg viewBox="0 0 24 24">
+              <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
+          </svg>
+          Adicionar resultado
+        </div>
+        <div class="horizontal layout end">
+          <div class="flex"></div>
+          <div class="deleteRegister horizontal layout end" ng-click="deleteRegister(key)">
+            Eliminar registro
+            <svg viewBox="0 0 24 24" >
+              <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="leaflet-popup-tip-container">
+      <div class="leaflet-popup-tip">
+      </div>
+    </div>
+  </div>
+</div>
+<div class="calendario leaflet-container " style="position: absolute; top: {{calendario.position.top}}px; left: {{calendario.position.left}}px;" ng-show="calendario.show">
+  <a class="leaflet-popup-close-button" href="" ng-click="hideCalendar()">×</a>
+  <div class="horizontal layout center">
+    <svg viewBox="-4 -4 30 30" ng-click="subtractMonth()">
+        <path d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z" />
+    </svg>
+    <div class="mes flex">{{ calendario.mes }} {{ calendario.ano }}</div>
+    <svg viewBox="-4 -4 30 30" ng-click="addMonth()">
+      <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" />
+    </svg>
+  </div>
+  <div class="horizontal layout center">
+    <div ng-repeat="d in calendario.dias track by $index" class="flex vertical layout center nombreDia" ng-class="{'last': $last}">
+      {{ d }}
+    </div>
+  </div>
+  <div ng-repeat="(indexSemana,semana) in calendario.celdas" class="horizontal layout">
+    <div ng-repeat="(indexDia,dia) in semana" class="flex dia vertical layout center {{dia.clase}}">
+      <div ng-click="selectDay($event)" id="{{dia.numero}}">{{ dia.numero }}</div>
+    </div>
+  </div>
+</div>
