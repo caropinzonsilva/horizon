@@ -33,7 +33,7 @@ node_modules
 *.csv
 
 #bower_components
-bower_components
+#bower_components
 
 # Debug log from npm
 npm-debug.log
