@@ -1,23 +1,15 @@
 
 	var app = require('express')();
 	var http = require('http').Server(app);
-	var io = require('socket.io')(http);
 	var express = require('express');
 	var MongoClient = require('mongodb').MongoClient;
 	var mongoose = require('mongoose');
 	var bodyParser = require('body-parser');
-	var Twitter = require('twitter');
 	var fs = require("fs");
 	var csv = require("fast-csv");
 	var moment = require('moment');
 	var _ = require('lodash');
-	var csvWriter = require('csv-write-stream');
-	var sentiment = require('sentiment');
 	var DecisionTree = require('decision-tree');
-	var cluster = require('k-means');
-	var C45 = require('c4.5');
-	var ml = require('machine_learning');
-	var _ = require('lodash');
 	var obj = JSON.parse(fs.readFileSync('/Users/carolinapinzon/Desktop/export/estrato.geojson', 'utf8'));
 
 	// Add headers
@@ -42,12 +34,12 @@
 
  
  	//Twitter-----------------------------------------------------------------------------------------
-	var client = new Twitter({
+	/*var client = new Twitter({
 	  	consumer_key: 'yTa9x8ePYPwuqzMhtFyjONS78',
 		consumer_secret: '33qohwnrUH2ThGXluDlAVTxBXYHe8wtQRYz2lgs2GvXDv0Q1KX',
 		access_token_key: '4494339867-jjDmNVKzBZ3mKRJrOhUQ6nTOCrDsnhl0mX3TCi0',
 		access_token_secret: '0HefD9zIX5Y3N5wqUwYUM1k2JhrJWMHEvU1VapwZtzWFm'
-	});
+	});*/
 
 	//JSON support-------------------------------------------------------------------------------------
 	// create application/x-www-form-urlencoded parser
