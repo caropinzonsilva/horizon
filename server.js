@@ -10,7 +10,7 @@
 	var moment = require('moment');
 	var _ = require('lodash');
 	var DecisionTree = require('decision-tree');
-	var obj = JSON.parse(fs.readFileSync('/Users/carolinapinzon/Desktop/export/estrato.geojson', 'utf8'));
+	//var obj = JSON.parse(fs.readFileSync('/Users/carolinapinzon/Desktop/export/estrato.geojson', 'utf8'));
 
 	// Add headers
 	app.use(function (req, res, next) {
