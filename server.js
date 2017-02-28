@@ -123,8 +123,8 @@
 					{
 						'timeB': { 
 							//$gt: 0
-							$gt: parseInt(req.query.t) - 86400000 , 
-							$lt: parseInt(req.query.t)
+							$gt: parseInt(req.query.t) - 86400000 - 31540000000, 
+							$lt: parseInt(req.query.t) - 31540000000
 						}
 					},{
 						'timeB': 0
@@ -132,7 +132,7 @@
 					$and: [
 						{
 							'timeB': {
-								$lt: parseInt(req.query.t)
+								$lt: parseInt(req.query.t) - 31540000000
 							}
 						},{
 							'timeE': 0
@@ -153,7 +153,7 @@
 	});
 
 	app.get('/regions/:type', function(req, res){
-		return res.send(obj);
+		//return res.send(obj);
 	});
 
 	app.post('/explore', function(req, res) {
