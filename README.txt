@@ -1,3 +1,1 @@
-mongod --config mongod.conf
-mongorestore -d horizondb
-node server.js
+http://carolinapinzon.com:8087/
